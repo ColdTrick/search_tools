@@ -10,7 +10,9 @@ function search_tools_init(){
 		add_widget_type("search", elgg_echo("widgets:search:title"), elgg_echo("widgets:search:description"), "profile,dashboard,index,groups", true);
 		register_page_handler("widget_search_execute", "widget_search_execute_page_handler");
 		
-		register_plugin_hook('search', 'user', 'search_tools_group_members_hook');
+		register_plugin_hook('search', 'user', 'search_tools_search_users_hook');
+		unregister_plugin_hook('search', 'user', 'search_users_hook'); // unregister default search behaviour
+		
 	}
 }
 
@@ -279,7 +281,7 @@ function widget_search_execute_page_handler(){
 	exit();
 }
 
-function search_tools_group_members_hook($hook, $type, $value, $params) {
+function search_tools_search_users_hook($hook, $type, $value, $params) {
 	global $CONFIG;
 
 	if(isset($params["container_guid"])){
@@ -287,50 +289,56 @@ function search_tools_group_members_hook($hook, $type, $value, $params) {
 	}
 	
 	if($entity instanceof ElggGroup) {
-		
+		// check for group membership relation
 		$params["relationship"] = "member";
 		$params["relationship_guid"] = $params["container_guid"];
 		$params["inverse_relationship"] = TRUE;
-		unset($params["container_guid"]);
-		
-		$query = sanitise_string($params['query']);
-	
-		$join = "JOIN {$CONFIG->dbprefix}users_entity ue ON e.guid = ue.guid";
-		$params['joins'] = array($join);
-	
-		$fields = array('username', 'name');
-		$where = search_get_where_sql('ue', $fields, $params, FALSE);
-		
-		$params['wheres'] = array($where);
-	
-		// override subtype -- All users should be returned regardless of subtype.
-		$params['subtype'] = ELGG_ENTITIES_ANY_VALUE;
-	
-		$params['count'] = TRUE;
-		$count = elgg_get_entities($params);
-	
-		// no need to continue if nothing here.
-		if (!$count) {
-			return array('entities' => array(), 'count' => $count);
-		}
-		
-		$params['count'] = FALSE;
-		$entities = elgg_get_entities_from_relationship($params);
-	
-		// add the volatile data for why these entities have been returned.
-		foreach ($entities as $entity) {
-			$username = search_get_highlighted_relevant_substrings($entity->username, $query);
-			$entity->setVolatileData('search_matched_title', $username);
-	
-			$name = search_get_highlighted_relevant_substrings($entity->name, $query);
-			$entity->setVolatileData('search_matched_description', $name);
-		}
-	
-		return array(
-			'entities' => $entities,
-			'count' => $count,
-		);
+	} else {
+		$params["relationship"] = "member_of_site";
+		$params["relationship_guid"] = $CONFIG->site_guid;
+		$params["inverse_relationship"] = TRUE;
 	}
+	
+	unset($params["container_guid"]); // no need for this
+		
+	$query = sanitise_string($params['query']);
+
+	$join = "JOIN {$CONFIG->dbprefix}users_entity ue ON e.guid = ue.guid";
+	$params['joins'] = array($join);
+
+	$fields = array('username', 'name');
+	$where = search_get_where_sql('ue', $fields, $params, FALSE);
+	
+	$params['wheres'] = array($where);
+
+	// override subtype -- All users should be returned regardless of subtype.
+	$params['subtype'] = ELGG_ENTITIES_ANY_VALUE;
+
+	$params['count'] = TRUE;
+	$count = elgg_get_entities_from_relationship($params);
+
+	// no need to continue if nothing here.
+	if (!$count) {
+		return array('entities' => array(), 'count' => $count);
+	}
+	
+	$params['count'] = FALSE;
+	$entities = elgg_get_entities_from_relationship($params);
+
+	// add the volatile data for why these entities have been returned.
+	foreach ($entities as $entity) {
+		$username = search_get_highlighted_relevant_substrings($entity->username, $query);
+		$entity->setVolatileData('search_matched_title', $username);
+
+		$name = search_get_highlighted_relevant_substrings($entity->name, $query);
+		$entity->setVolatileData('search_matched_description', $name);
+	}
+
+	return array(
+		'entities' => $entities,
+		'count' => $count,
+	);
+	
 }
 
 register_elgg_event_handler("init", "system", "search_tools_init");
