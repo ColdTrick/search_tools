@@ -23,6 +23,9 @@
 		// @todo when using index table, can include result counts on each of these.
 		if (is_array($subtypes) && count($subtypes)) {
 			foreach ($subtypes as $subtype) {
+				if($subtype == "page_top"){
+					continue;
+				}
 				$option = elgg_echo("item:$type:$subtype");
 				$value = "$type:$subtype";
 				$options[$option] = $value; 
