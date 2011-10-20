@@ -90,7 +90,7 @@ if ($more) {
 	$more_link = '';
 }
 
-$body = elgg_view_title($type_str);
+$body = "<h3 class='search-tools-type-header'>" . $type_str . "</h3>";
 
 foreach ($entities as $entity) {
 	if ($view = search_get_search_view($vars['params'], 'entity')) {

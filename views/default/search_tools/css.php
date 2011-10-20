@@ -18,3 +18,6 @@
 	margin: 0 0 0 15px;
 	
 }
+.search-tools-type-header {
+	margin: 0 10px 5px;
+}
