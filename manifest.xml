@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin_manifest>
+	<field key="author" value="ColdTrick IT Solutions" />
+	<field key="version" value="1.0" />
+	<field key="description" value="Various search tools" />
+	<field key="website" value="http://www.coldtrick.com/" />
+	<field key="copyright" value="(C) ColdTrick 2010" />
+	<field key="licence" value="GNU Public License version 2" />
+	<field key="elgg_version" value="2009031301" />
+</plugin_manifest>
+<!--
+
+========================
+Features:
+========================
+ - Widget to perform a search
+ - Placing the widget in a group will limit the object search to the group and the users search to members of this group 
+
+========================
+Notes:
+========================
+- Only Tags custom search is enabled (so no comments)
+- Searching from within a group for users based on tags will not work (only regular user search)
+- If, for example, a search only should result in blogs, also blogs with a tag matching the search query is listed, but the more "+6 more tag" link will not result in a list of blogs with tags, but all object with tags 
+
+========================
+Version history:
+========================
+
+1.0 (2011-10-19):
+	- first version
+
+-->
