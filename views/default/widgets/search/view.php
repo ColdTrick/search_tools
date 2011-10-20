@@ -22,4 +22,4 @@
 
 	echo elgg_view("page_elements/contentwrapper", array("body" => $form));
 	
-	echo "<div id='widget_search_results_" . $widget->getGUID() . "'><div>";
+	echo "<div id='widget_search_results_" . $widget->getGUID() . "'></div>";
