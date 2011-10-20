@@ -304,8 +304,8 @@ function search_tools_search_objects_hook($hook, $type, $value, $params) {
 	if($params["subtype"] === "page"){
 		$params["subtype"] = array("page", "page_top");	
 	}
-	// extra filter for search from widget
 	
+	// extra filter for search from widget
 	$widget_guid = (int) get_input("widget_search_guid", $params["widget_search_guid"]);
 	
 	if(!empty($widget_guid)){
