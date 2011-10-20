@@ -21,7 +21,8 @@ $query = http_build_query(
 		'limit' => get_input('limit', 10),
 		'offset' => get_input('offset', 0),
 		'search_type' => $vars['params']['search_type'],
-		'container_guid' => $vars['params']['container_guid']
+		'container_guid' => $vars['params']['container_guid'],
+		'widget_search_guid' => $vars['params']['widget_search_guid'],
 	)
 );
 

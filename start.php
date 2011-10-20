@@ -10,9 +10,13 @@ function search_tools_init(){
 		add_widget_type("search", elgg_echo("widgets:search:title"), elgg_echo("widgets:search:description"), "profile,dashboard,index,groups", true);
 		register_page_handler("widget_search_execute", "widget_search_execute_page_handler");
 		
+		// user search
 		register_plugin_hook('search', 'user', 'search_tools_search_users_hook');
 		unregister_plugin_hook('search', 'user', 'search_users_hook'); // unregister default search behaviour
-		
+
+		// object search
+		register_plugin_hook('search', 'object', 'search_tools_search_objects_hook');
+		unregister_plugin_hook('search', 'object', 'search_objects_hook'); // unregister default search behaviour
 	}
 }
 
@@ -117,7 +121,8 @@ function widget_search_execute_page_handler(){
 			'subtype' => $entity_subtype,
 			'owner_guid' => $owner_guid,
 			'container_guid' => $container_guid,
-			'pagination' => ($search_type == 'all') ? FALSE : TRUE
+			'pagination' => ($search_type == 'all') ? FALSE : TRUE,
+			'widget_search_guid' => $widget_guid
 		);
 		
 		$types = get_registered_entity_types();
@@ -213,6 +218,10 @@ function widget_search_execute_page_handler(){
 						// only support tag search (as tag search can listen to container_guid)
 						continue;
 					}
+					if($widget->tag_filter){
+						// only support tag search if not filtered in object search
+						continue;
+					}
 					
 					if ($search_type != 'all' && $search_type != $type) {
 						continue;
@@ -275,10 +284,76 @@ function widget_search_execute_page_handler(){
 		$body = $results_html;
 	}
 	
-	
 	echo $body;
 	
 	exit();
+}
+
+function search_tools_search_objects_hook($hook, $type, $value, $params) {
+	global $CONFIG;
+
+	$join = "JOIN {$CONFIG->dbprefix}objects_entity oe ON e.guid = oe.guid";
+	$params['joins'] = array($join);
+	$fields = array('title', 'description');
+	
+	$where = search_get_where_sql('oe', $fields, $params, FALSE);
+
+	$params['wheres'] = array($where);
+	$params['count'] = TRUE;
+	
+	if($params["subtype"] === "page"){
+		$params["subtype"] = array("page", "page_top");	
+	}
+	// extra filter for search from widget
+	
+	$widget_guid = (int) get_input("widget_search_guid", $params["widget_search_guid"]);
+	
+	if(!empty($widget_guid)){
+		$widget = get_entity($widget_guid);
+		if($widget instanceof ElggWidget){
+			if($widget->tag_filter){
+				$tags = string_to_tag_array($widget->tag_filter);
+
+				$filtered_tags = array();
+				foreach($tags as $tag){
+					$clean_tag = sanitize_string($tag);
+					if(!empty($clean_tag)){
+						$filtered_tags[] = $clean_tag;
+					}
+				}
+				
+				if(!empty($filtered_tags)){
+					// add extra search criteria
+					$params["metadata_names"] = array("tags");
+					$params["metadata_values"] = $filtered_tags;
+				}
+			}
+		}
+	}
+	
+	$count = elgg_get_entities_from_metadata($params);
+	
+	// no need to continue if nothing here.
+	if (!$count) {
+		return array('entities' => array(), 'count' => $count);
+	}
+	
+	$params['count'] = FALSE;
+	$entities = elgg_get_entities_from_metadata($params);
+
+	// add the volatile data for why these entities have been returned.
+	foreach ($entities as $entity) {
+		$title = search_get_highlighted_relevant_substrings($entity->title, $params['query']);
+		$entity->setVolatileData('search_matched_title', $title);
+
+		$desc = search_get_highlighted_relevant_substrings($entity->description, $params['query']);
+		$entity->setVolatileData('search_matched_description', $desc);
+	}
+	
+	return array(
+		'entities' => $entities,
+		'count' => $count,
+	);
 }
 
 function search_tools_search_users_hook($hook, $type, $value, $params) {

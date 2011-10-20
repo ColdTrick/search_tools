@@ -57,4 +57,8 @@
 		echo "</label><br />";
 	}
 	echo elgg_view("input/hidden", array("internalname" => "params[types][]", "value" => 0));
+
+	echo "<br />";
+	echo elgg_echo("tags");
+	echo elgg_view("input/tags", array("internalname" => "params[tag_filter]", "value" => $widget->tag_filter));
 	
